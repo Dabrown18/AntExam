@@ -10,38 +10,54 @@
 
 import React, {useEffect, useState} from 'react';
 import {SafeAreaView, StyleSheet, FlatList, Text, View} from 'react-native';
+import { gql, useQuery } from '@apollo/client'
 import {mockData} from './src/utils/mockData';
 
+const QUERY = gql`
+  query {
+    ants {
+        name
+        length
+        weight
+        color
+      }
+  }
+`;
+
 const App = () => {
-  const [data, setData] = useState(mockData);
+  const { data, loading } = useQuery(QUERY);
+  const [antData, setAntData] = useState(mockData);
   function generateAntWinLikelihoodCalculator() {
     return Math.random() * 100;
   }
 
   useEffect(() => {
     let mutatedData: any = [];
-    data.map(ant => {
-      ant.likelihoodOfWinning = generateAntWinLikelihoodCalculator();
-      mutatedData.push(ant);
-    });
-    setData(mutatedData);
+    if (data?.length > 0) {
+      data?.map((ant: {likelihoodOfWinning: number}) => {
+        ant.likelihoodOfWinning = generateAntWinLikelihoodCalculator();
+        mutatedData.push(ant);
+      });
+      setAntData(mutatedData);
+      const sortedAnts = antData.sort(
+        (a, b) => b?.likelihoodOfWinning - a?.likelihoodOfWinning,
+      );
+      setAntData(sortedAnts);
+    }
   }, []);
 
-  console.log(data);
 
-  const sortedAnts = data.sort(
-    (a, b) => b?.likelihoodOfWinning - a?.likelihoodOfWinning,
-  );
 
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
         horizontal
-        data={sortedAnts}
+        data={antData}
         renderItem={({item}) => {
           console.log('Item: ', item);
           return (
-            <View style={[styles.ant, {backgroundColor: item.color.toLowerCase()}]}>
+            <View
+              style={[styles.ant, {backgroundColor: item.color.toLowerCase()}]}>
               <Text style={styles.text}>{item.name}</Text>
             </View>
           );
